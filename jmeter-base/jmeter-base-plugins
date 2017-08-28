@@ -1,0 +1,29 @@
+FROM alpine
+#LABEL Description="Jmeter 3.2 image with most used plugins" 
+# Installig Pre-requisite Packages JRE && unzip
+RUN apk -q update && \
+       apk -q add \
+                        ca-certificates wget\
+                        openjdk8-jre 
+                        #unzip
+
+# Create a version so for future releases only one point of change
+ENV JMETER_VERSION apache-jmeter-3.2
+ENV JMETER_PLUGINS jpgc-dummy,jpgc-json=2.2,jpgc-csvars,jpgc-redis,jpgc-json,jpgc-webdriver,jpgc-casutg,jpgc-tst,jpgc-wsc,jpgc-prmctl,jpgc-httpraw,jpgc-oauth
+
+# Installing jmeter
+RUN   mkdir /jmeter \
+        && cd /jmeter/ \
+        && wget http://archive.apache.org/dist/jmeter/binaries/${JMETER_VERSION}.tgz \
+        && tar -xzf ${JMETER_VERSION}.tgz \
+        && rm ${JMETER_VERSION}.tgz \
+        && rm -rf ${JMETER_VERSION}/docs ${JMETER_VERSION}/printable_docs\
+        && wget -O ${JMETER_VERSION}/lib/ext/jmeter-plugins-manager.jar https://jmeter-plugins.org/get/ \
+        && wget -P ${JMETER_VERSION}/lib/ --content-disposition http://search.maven.org/remotecontent?filepath=kg/apc/cmdrunner/2.0/cmdrunner-2.0.jar \
+        && pwd \
+        && java -cp ${JMETER_VERSION}/lib/ext/jmeter-plugins-manager.jar org.jmeterplugins.repository.PluginManagerCMDInstaller \
+        && ${JMETER_VERSION}/bin/PluginsManagerCMD.sh install ${JMETER_PLUGINS}
+# Setting Jmeter Home
+ENV JMETER_HOME /jmeter/${JMETER_VERSION}/
+# Finally Adding Jmeter to the Path
+ENV PATH $JMETER_HOME/bin:$PATH
